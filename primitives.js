@@ -33,13 +33,63 @@ var Artanjs_Primitives = {
     }
     return ret;
   },
-
-  '+' : function (x, y) { return x + y; },
-
-  '-' : function (x, y) { return x - y; },
-
-  '*' : function (x, y) { return x * y; },
-
-  '/' : function (x, y) { return x / y; },
   
+  'cons' : function (car, cdr) {
+    return Artanjs_Pair([car, cdr]);
+  },
+
+  'list' : function () {
+    return Artanjs_List(arguments);
+  },
+
+  '+' : function () {
+    if (arguments.length === 0) {
+      return 0;
+    } else if (arguments.length === 1) {
+      return arguments[0];
+    }
+    for (var i = 0, ret = 0; i < arguments.length; i++) {
+      ret += arguments[i];
+    }
+    return ret;
+  },
+
+  '-' : function () {
+    if (arguments.length === 0) {
+      throw Error('Wrong number of arguments to -');
+    } else if (arguments.length === 1) {
+      return -arguments[0];
+    }
+    var ret = arguments[0];
+    for (var i = 1; i < arguments.length; i++) {
+      ret -= arguments[i];
+    }
+    return ret;
+  },
+
+  '*' : function () {
+    if (arguments.length === 0) {
+      return 1;
+    } else if (arguments.length === 1) {
+      return arguments[0];
+    }
+    for (var i = 0, ret = 1; i < arguments.length; i++) {
+      ret *= arguments[i];
+    }
+    return ret;
+  },
+  
+  '/' : function () {
+    if (arguments.length === 0) {
+      throw Error('Wrong number of arguments to /');
+    } else if (arguments.length === 1) {
+      return arguments[0];
+    }
+    var ret = arguments[0];
+    for (var i = 1; i < arguments.length; i++) {
+      ret /= arguments[i];
+    }
+    return ret;
+  }
 };
+exports.Artanjs_Primitives = Artanjs_Primitives;
