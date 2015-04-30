@@ -15,77 +15,88 @@
   along with this program.
   If not, see <http://www.gnu.org/licenses/>.
 */
+
+var easejs = require('easejs');
+var Class = easejs.Class;
+var Class_isA = easejs.Class_isA;
+
 var Artanjs_Type =
   Class( 'Artanjs_Type',
          {
-           'private _obj' : 'undefined'
+           'private _obj' : 'undefined',
            
-           'public get_val' : function () { return this._obj; }
+           'public get_val' : function () { return this._obj; },
 
-           'public set_val' : function (x) { this._obj = x; return x;}
+           'public set_val' : function (x) { this._obj = x; return x;},
            
-           'public equal' : function (x) {
+           'virtual public equal' : function (x) {
              return this._obj === x.get_val();
-           }
+           },
 
-           'public __construct' : function (val) {
-             this._obj = val;
-           }
-
-           'public print' : function () {
+           'virtual public print' : function () {
              return this._obj;
            }
          });
+exports.Artanjs_Type = Artanjs_Type;
 
 var Artanjs_Unspecified = Class( 'Artanjs_Unspecified' ).extend( Artanjs_Type );
 var _unspecified_ = Artanjs_Unspecified('*unspecified*');
+exports._unspecified_ = _unspecified_;
 
 var Artanjs_Boolean = Class( 'Artanjs_Boolean' ).extend( Artanjs_Type );
+exports.Artanjs_Boolean = Artanjs_Boolean;
+
 var Artanjs_True = Artanjs_Boolean(true);
+exports.Artanjs_True = Artanjs_True;
+
 var Artanjs_False = Artanjs_Boolean(false);
+exports.Artanjs_False = Artanjs_False;
            
 var Artanjs_HashTable =
   Class( 'Artanjs_HashTable ')
   .extend( Artanjs_Type,
            {             
-             'public size' : this._obj.length
+             'public get_size' : function () {
+               return this._obj.length;
+             },
 
-             'override public __construct' : function (h) {
+             'public __construct' : function (h) {
                var ht = [];
                for (k in h) {
                  if (h.hasOwnProperty(k))
                    ht[k] = h[k];
                }
                this._obj = ht;
-             }
+             },
 
              'public ref' : function (k) {
                return this._obj[k];
-             }
+             },
 
              'public set' : function (k, v) {
                this._obj[k] = v;
-             }
+             },
 
              'public has' : function (k) {
                return this.ref(k) !== 'undefined';
              }
            });
+exports.Artanjs_HashTable = Artanjs_HashTable;
 
 var Artanjs_String =
   Class( 'Artanjs_String' )
   .extend( Artanjs_Type,
            {
-             'private len' : 0
+             'private len' : 0,
              
-             'private immutable' : true
+             'private immutable' : true,
 
-             'override public __construct' : function (val, immu) {
+             'public __construct' : function (val, immu) {
                this._obj = val;
                this.len = val.length;
                if (immu === true)
                  this.immutable = true;
-             }
+             },
 
              'override public equal' : function (s) {
                if (!Class_isA(Artanjs_String, s))
@@ -97,7 +108,7 @@ var Artanjs_String =
                    return false;
                }
                return true;
-             }
+             },
 
              'public foreach' : function (proc, start, end) {
                var s = 0, e = 0;
@@ -110,7 +121,7 @@ var Artanjs_String =
                for (var i = s, len = this.len; i < e; i++) {
                  proc(Artanjs_Char(this._obj[i]));
                }
-             }
+             },
 
              'public map' : function (proc, start, end) {
                var s = 0, e = 0;
@@ -125,13 +136,14 @@ var Artanjs_String =
                  ret.push(proc(Artanjs_Char(this._obj[i])));
                }
                return Artanjs_List(ret);
-             }
+             },
+
              'public ref' : function (i) {
                if (i >= this.len)
                  throw Error('Value out of range 0 to 3: ' + i);
                var ch = this._obj[i];
                return Artanjs_Char(ch);
-             }
+             },
              
              'public set' : function (i, c) {
                if (this.immutable)
@@ -141,6 +153,7 @@ var Artanjs_String =
                this._obj[i] = c.get_val();
              }
            });
+exports.Artanjs_String = Artanjs_String;
 
 var Artanjs_Intern_Table = Artanjs_HashTable({});
 
@@ -149,11 +162,11 @@ var Artanjs_Symbol =
   Class( 'Artanjs_Symbol' )
   .extend( Artanjs_Type,
            {
-             'private intern' : false
+             'private intern' : false,
 
              'public is_intern' : function () {
                return this.intern !== false
-             }
+             },
 
              'private intern_sym' : function (str) {
                if (!Class_isA(Artanjs_String, val))
@@ -161,39 +174,47 @@ var Artanjs_Symbol =
                var n = Artanjs_Intern_Table.size + 1;
                Artanjs_Intern_Table.set(str, n);
                this.intern = n;
-             }
+             },
 
              'public dump' : function () {
                return Artanjs_Intern_Table[this.intern];
-             }
+             },
 
-             'override public __construct' : function (val) {
+             'public __construct' : function (val) {
                if (Artanjs_Intern_Table.ref(val) === 'undefined')
                  this.intern_sym(val);
              }
            });
+exports.Artanjs_Symbol = Artanjs_Symbol;
 
 // We intern keywords for performance
 var Artanjs_Keyword =
   Class( 'Artanjs_Keyword' )
   .extend( Artanjs_Type,
            {
-             'private intern' : false
+             'public intern' : false,
              
-             'override public __construct' : function (val) {
+             'public __construct' : function (val) {
                if (!Class_isA(Artanjs_String, val))
                  throw Error('Wrong type (expecting string): ' + val);
                var n = Artanjs_Intern_Table.size + 1;
                var kw = '\u029e' + val;
                Artanjs_Intern_Table.set(kw, n);
                this.intern = n;
-             }
+             },
+
+             'override equal' : function (kw) {
+               if (!Class_isA(Artanjs_Keyword, kw))
+                 return false;
+               return kw.intern === this.intern;
+             },
 
              'override public print' : function () {
                var kw = Artanjs_Intern_Table.ref(this.intern);
                return '#:' + /^\u029e(.*)/.exec(kw)[1];
              }
            });
+exports.Artanjs_Keyword = Artanjs_Keyword;
 
 var Artanjs_Char_table =
   ['nul', 'soh', 'stx', 'etx', 'eot', 'enq', 'ack', 'bel',
@@ -208,26 +229,26 @@ var Artanjs_Char =
                if (!Class_isA(Artanjs_Char, c))
                  throw Error('Wrong type argument (expecting character): ' + c)
                return this._obj === c.get_val();
-             }
+             },
 
              'public to_integer' : function () {
                return this._obj.charCodeAt(0);
-             }
+             },
 
              'private num2char' : function (n) {
                if (((n >=0) && (n < 0xd800)) || ((n > 0xdfff) && (n <= 0x10ffff)))
                  return String.fromCharCode(n);
                throw Error("out-of-range hex character escape: " + n); 
-             }
+             },
              
              'private name2char' : function (name) {
                var ret = Artanjs_Char_table.indexOf(name);
                if (ret === 'undefined')
                  throw Error("unknown character name " + val);
                return ret;
-             }
+             },
                
-             'override public __construct' : function (val) {
+             'public __construct' : function (val) {
                var ch;
                switch(true) {
                case /^[a-zA-Z ]+$/.test(val): ch = val; break;
@@ -239,7 +260,7 @@ var Artanjs_Char =
                default: this.name2char(val);
                }
                this._obj = ch;
-             }
+             },
 
              'override public print' : function () {
                var ch;
@@ -257,45 +278,53 @@ var Artanjs_Char =
                return '#\\' + ch;
              }
            });
+exports.Artanjs_Char = Artanjs_Char;
 
 var Artanjs_Callable =
   Class( 'Artanjs_Callable' )
   .extend( Artanjs_Type,
            {
+             'public __construct' : function (val) {
+               this._obj = val;
+             },
+
              'public is_macro' : false
            });
+exports.Artanjs_Callable = Artanjs_Callable;
 
 var Artanjs_Continuation = Class( 'Artanjs_Continuation' ).extend( Artanjs_Type );
+exports.Artanjs_Continuation = Artanjs_Continuation;
 
 var Artanjs_Pair =
   Class( 'Artanjs_Pair' )
   .extend( Artanjs_Type,
            {
-             'override public __construct' : function (car, cdr) {
-               this._obj = [car, cdr];
-             }
-
+             'virtual public __construct' : function (pair) {
+               this._obj = pair;
+             },
+             
              'public car' : function () {
                return this._obj[0];
-             }
+             },
              
-             'public cdr' : function () {
+             'public virtual cdr' : function () {
                return this._obj[1];
-             }
+             },
              
              'public set_car' :  function (v) {
                this._obj[0] = v;
-             }
+             },
 
-             'public set_cdr' : function (v) {
+             'virtual public set_cdr' : function (v) {
                this._obj[1] = v;
-             }
+             },
              
-             'public print' : function () {
+             'virtual override public print' : function () {
                var objs = this._obj.map(function (e, i, arr) { return e.print(); });
-               return '(' + objs[0] ' . ' + objs[1] + ')';
+               return '(' + objs[0] + ' . ' + objs[1] + ')';
              }
            });
+exports.Artanjs_Pair = Artanjs_Pair;
 
 var Artanjs_Pair_List =
   Class( 'Artanjs_Pair_List' )
@@ -303,7 +332,7 @@ var Artanjs_Pair_List =
            {
              'override public cdr' : function () {
                return Artanjs_Pair_List(this.obj.slice(1));
-             }
+             },
 
              'override public print' : function () {
                var o = this._obj.slice(0, this._obj.length);
@@ -312,6 +341,7 @@ var Artanjs_Pair_List =
                return '(' + objs.join(' ') + ' . ' + end.print() + ')';
              }
            });
+exports.Artanjs_Pair_List = Artanjs_Pair_List;
 
 /* We don't implement for-each and map here, but in Scheme later.
  * Or it's not so hackable.
@@ -320,43 +350,43 @@ var Artanjs_List =
   Class( 'Artanjs_List' )
   .extend( Artanjs_Pair,
            {
-             'public copy' : function { return this; }
+             'public copy' : function () { return this; },
 
-             'public len' : 0
+             'public len' : 0,
 
              'override public __construct' : function (val) {
                this._obj = val;
                this.len = val.length;
-             }
+             },
              
              'override public cdr' : function () {
                return Artanjs_List(this._obj.slice(1));
-             }
+             },
 
              'public cadr' : function () {
                return this.cdr().car();
-             }
+             },
 
              'public caar' : function () {
                return this.car().car();
-             }
+             },
 
              'public caddr' : function () {
                return this.cdr().cdr().car();
-             }
+             },
              
              'public cddr' : function () {
                return this.cdr().cdr();
-             }
+             },
 
              'override public set_cdr' : function (v) {
                var car = this._obj[0];
                this._obj = [car, v];
-             }
+             },
 
              'public is_null' : function () {
                return this._obj.length === 0;
-             }
+             },
 
              'override public equal' : function (l) {
                if (!Class_isA(Artanjs_List, l))
@@ -368,37 +398,41 @@ var Artanjs_List =
                    return false;
                }
                return true;
-             }
+             },
 
              'public ref' : function (i) {
                if (i >= this.len)
                  throw Error('Value out of range 0 to 3: ' + i);
                var e = this._obj[i];
                return e;
-             }
+             },
              
              'public set' : function (i, c) {
                if (i >= this.len)
                  throw Error('Value out of range 0 to 3: ' + i);
                this._obj[i] = c.get_val();
-             }
+             },
 
              'override public print' : function () {
                var objs = this._obj.map(function (e, i, arr) { return e.print(); });
                return '(' + objs.join(' ') + ')';
              }
            });
-
+exports.Artanjs_List = Artanjs_List;
 
 var Artanjs_Array = Class( 'Artanjs_Array' )
-  .extend( Artanjs_Type
+  .extend( Artanjs_Type,
            {
+             'public __construct' : function (val) {
+               this._obj = val;
+             },
+
              'public ref' : function (i) {
                if (i >= this.len)
                  throw Error('Value out of range 0 to 3: ' + i);
                var e = this._obj[i];
                return e;
-             }
+             },
              
              'public set' : function (i, c) {
                if (i >= this.len)
@@ -406,12 +440,13 @@ var Artanjs_Array = Class( 'Artanjs_Array' )
                this._obj[i] = c.get_val();
              }
            });
+exports.Artanjs_Array = Artanjs_Array;
 
 var Artanjs_Vector =
   Class( 'Artanjs_Vector' )
   .extend( Artanjs_Array,
            {
-             'public equal' : function (v) {
+             'override public equal' : function (v) {
                if (!Class_isA(Artanjs_Vector, v))
                  throw Error('Wrong type argument (expecting vector): ' + v)
                if (this.len !== l.len)
@@ -421,17 +456,33 @@ var Artanjs_Vector =
                    return false;
                }
                return true;
-             }
+             },
 
              'override public print' : function () {
                var objs = this._obj.map(function (e, i, arr) { return e.print(); });
                return '#(' + objs.join(' ') + ')';
              }
            });
+exports.Artanjs_Vector = Artanjs_Vector;
 
 var Artanjs_Bytevector = Class( 'Artanjs_Bytevector' ).extend( Artanjs_Vector );
+exports.Artanjs_Bytevector = Artanjs_Bytevector;
 
-var Artanjs_Number = Class( 'Artanjs_Number' ).extend( Artanjs_Type );
+var Artanjs_Number =
+  Class( 'Artanjs_Number' )
+  .extend( Artanjs_Type,
+           {
+             'public __construct' : function (val) {
+               this._obj = val;
+             }
+           });
+exports.Artanjs_Number = Artanjs_Number;
+
 var Artanjs_Real = Class( 'Artanjs_Real' ).extend( Artanjs_Number );
+exports.Artanjs_Real = Artanjs_Real;
+
 var Artanjs_Imagin = Class( 'Artanjs_Imagin' ).extend( Artanjs_Number );
+exports.Artanjs_Imagin = Artanjs_Imagin;
+
 var Artanjs_Integer = Class( 'Artanjs_Integer' ).extend( Artanjs_Real );
+exports.Artanjs_Integer = Artanjs_Integer;
